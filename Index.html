@@ -3,14 +3,12 @@ import { useState, useRef, useEffect } from "react";
 // ---------- helpers ----------
 const extractJSON = (raw) => {
   const clean = raw.replace(/```json|```/g, "").trim();
-  const start = clean.indexOf("{");
-  const end = clean.lastIndexOf("}");
-  if (start === -1 || end === -1) return null;
-  try { return JSON.parse(clean.slice(start, end + 1)); } catch { return null; }
+  const s = clean.indexOf("{"), e = clean.lastIndexOf("}");
+  if (s === -1 || e === -1) return null;
+  try { return JSON.parse(clean.slice(s, e + 1)); } catch { return null; }
 };
-
-const textFromResponse = (data) =>
-  (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("\n");
+const textFromResponse = (d) =>
+  (d.content || []).filter((b) => b.type === "text").map((b) => b.text).join("\n");
 
 const resizeImage = (file, maxDim = 1000) =>
   new Promise((resolve, reject) => {
@@ -52,14 +50,13 @@ async function callClaude(body, timeoutMs = 90000) {
 }
 
 // ---------- lure illustrations ----------
-const G = "#cfe84a", D = "#9fb3a9", B = "#ece8dc", R = "#d1704a";
-
 const LureArt = ({ type }) => {
+  const G = "#cfe84a", D = "#9fb3a9", B = "#ece8dc", R = "#d1704a";
   const t = (type || "").toLowerCase();
   const P = { width: "100%", height: "100%", viewBox: "0 0 120 80", fill: "none" };
   if (t.includes("frog"))
     return (<svg {...P}><ellipse cx="58" cy="40" rx="30" ry="16" fill={G}/><ellipse cx="58" cy="34" rx="30" ry="10" fill="#a9c22e"/><circle cx="42" cy="30" r="6" fill={B}/><circle cx="42" cy="30" r="2.5" fill="#15230a"/><circle cx="58" cy="27" r="6" fill={B}/><circle cx="58" cy="27" r="2.5" fill="#15230a"/><path d="M86 36 l18 -8 M86 40 l22 0 M86 44 l18 8" stroke={B} strokeWidth="2.5" strokeLinecap="round"/><path d="M30 46 q-8 8 -4 14" stroke="#a9c22e" strokeWidth="4" strokeLinecap="round"/></svg>);
-  if (t.includes("chatter") || t.includes("blade"))
+  if (t.includes("chatter") || t.includes("blade") || t.includes("vibrating"))
     return (<svg {...P}><path d="M28 24 l14 16 -14 16 z" fill={B} stroke={D} strokeWidth="1.5"/><circle cx="50" cy="40" r="8" fill={R}/><circle cx="48" cy="38" r="2" fill={B}/><path d="M56 36 q24 -10 40 2 M56 40 q26 -2 42 8 M56 44 q22 8 36 16" stroke={G} strokeWidth="3" strokeLinecap="round"/><path d="M96 46 q8 4 4 12" stroke={D} strokeWidth="2.5" fill="none"/></svg>);
   if (t.includes("spinner"))
     return (<svg {...P}><path d="M40 52 q-2 -20 14 -24 q16 4 14 24" stroke={D} strokeWidth="2.5" fill="none"/><ellipse cx="68" cy="26" rx="7" ry="11" fill={B} transform="rotate(20 68 26)"/><circle cx="40" cy="54" r="7" fill={R}/><path d="M46 52 q20 -6 34 2 M46 56 q20 2 32 10" stroke={G} strokeWidth="3" strokeLinecap="round"/></svg>);
@@ -81,12 +78,241 @@ const LureArt = ({ type }) => {
     return (<svg {...P}><path d="M46 20 l-12 12 M46 20 l12 12 M46 20 v-6" stroke={B} strokeWidth="4" strokeLinecap="round"/><path d="M46 32 q0 12 8 16" stroke={D} strokeWidth="2.5" fill="none"/><circle cx="58" cy="50" r="6" fill={R}/><path d="M64 48 q18 -4 30 4" stroke={G} strokeWidth="3" strokeLinecap="round"/></svg>);
   if (t.includes("popper"))
     return (<svg {...P}><path d="M34 30 q-8 10 0 20 q26 8 48 0 q6 -10 0 -20 q-22 -8 -48 0 z" fill={G}/><path d="M34 30 q-8 10 0 20 q-6 -10 0 -20" fill="#15230a" opacity=".5"/><circle cx="48" cy="34" r="3" fill="#15230a"/><path d="M24 26 q-4 -4 -2 -8 M22 40 q-6 0 -8 -2 M24 52 q-4 4 -2 8" stroke={B} strokeWidth="2" strokeLinecap="round"/></svg>);
-  if (t.includes("spoon"))
-    return (<svg {...P}><ellipse cx="60" cy="40" rx="14" ry="24" fill={B} transform="rotate(24 60 40)"/><ellipse cx="56" cy="36" rx="6" ry="12" fill={D} transform="rotate(24 56 36)" opacity=".6"/></svg>);
   if (t.includes("ned"))
     return (<svg {...P}><circle cx="40" cy="44" r="8" fill={R}/><path d="M48 42 q26 -10 48 -4" stroke={G} strokeWidth="8" strokeLinecap="round"/></svg>);
   return (<svg {...P}><path d="M62 14 v30 q0 16 -14 16 q-12 0 -12 -10" stroke={G} strokeWidth="4" fill="none" strokeLinecap="round"/><path d="M36 54 l-6 -8" stroke={G} strokeWidth="4" strokeLinecap="round"/></svg>);
 };
+
+// ---------- LURE SCHOOL (built-in, works instantly) ----------
+const SCHOOL = [
+  {
+    id: "frog", name: "Hollow Body Frog", type: "frog", diff: "Beginner+", best: "Late spring–fall • pads, grass mats, slop • the #1 snakehead bait",
+    what: "A soft hollow frog with a weedless double hook that rides over the thickest vegetation without snagging. When a fish eats it, the body collapses and exposes the hooks.",
+    gear: ["Rod: 7'3\" heavy, fast action", "Reel: baitcaster, 7.1:1 or faster", "Line: 50 lb braid straight to the frog — no leader", "Braid is mandatory: it cuts pads and doesn't stretch on the hookset"],
+    steps: [
+      "Cast PAST your target so the splash doesn't spook fish, then work it into the zone",
+      "Point rod tip down, give small rhythmic twitches with slack in the line — the frog should walk side to side",
+      "Stop it dead in every hole, pocket, and edge for a 3–5 second pause. Most bites come on the pause",
+      "When a fish blows up: DO NOT SET. Count 'one-one-thousand' until you feel weight pulling",
+      "Then set hard sideways and never stop reeling — drag the fish over the top of the cover",
+    ],
+    mistakes: ["Setting the hook on the splash instead of the weight — the #1 reason for missed frog fish", "Fishing it too fast and skipping pauses", "Using mono or fluoro — you'll lose fish in the pads", "Giving up after one blowup — throw right back at it"],
+    tips: ["Trim the legs back ½ inch for a sharper walking action", "Black frog on cloudy days, white or chartreuse belly in stained water", "If fish miss it twice, follow up with a fluke in the same spot"],
+  },
+  {
+    id: "chatterbait", name: "Chatterbait", type: "chatterbait", diff: "Beginner", best: "Year-round • stained/muddy water • grass edges and flats",
+    what: "A bladed jig that vibrates hard and flashes. Fish feel it before they see it, which makes it the best 'search bait' for dirty water — cover water fast to find fish.",
+    gear: ["Rod: 7' medium-heavy, moderate-fast", "Reel: baitcaster, 6.4:1–7:1", "Line: 15–17 lb fluorocarbon (or 40 lb braid in heavy grass)", "Always add a swimbait or craw trailer"],
+    steps: [
+      "Cast to the edge of grass, wood, or a mud line and let it sink 1–2 seconds",
+      "Reel steady, just fast enough to feel the blade thump-thump-thump in the rod tip",
+      "Every 5–6 cranks, snap the rod tip forward, then let it fall a beat — the 'hunt' triggers strikes",
+      "When it ticks grass, rip it free hard — that rip fires reaction bites",
+      "When you feel the thump stop or get heavy, reel down and sweep hard sideways",
+    ],
+    mistakes: ["Reeling too fast — you're pulling it away before fish commit", "No trailer — the bare bait looks thin and gets fewer bites", "Setting straight up instead of sweeping sideways", "Ignoring it in cold water — slow-rolled, it's a winter killer"],
+    tips: ["Green pumpkin in clear-ish water, black/blue in muddy, chartreuse/white when it looks like chocolate milk", "If the blade stops vibrating, the bait is fouled with grass — check it", "½ oz is the do-everything size"],
+  },
+  {
+    id: "swimbait", name: "Paddle-Tail Swimbait", type: "swimbait", diff: "Beginner", best: "Year-round • the easiest lure to fish 'right' • mimics real baitfish",
+    what: "A soft plastic fish with a paddle tail that kicks on a straight reel. There is no wrong retrieve, which makes it the best confidence bait for a beginner.",
+    gear: ["Rod: 7' medium or medium-heavy", "Line: 12–15 lb fluoro, or 30 lb braid + fluoro leader", "Rig on a weighted swimbait hook (weedless) or a ¼–⅜ oz jighead", "3.8–4.8 inch is the sweet spot"],
+    steps: [
+      "Cast past visible cover or bait activity and count it down — 1 second per foot of depth",
+      "Reel slow and steady. The tail does all the work. Slower is almost always better",
+      "Keep the bait just above where you think fish sit — they feed looking up",
+      "Every so often kill it for one second and let it drop — strikes come on the drop",
+      "Bites feel like a tick or sudden weight: reel down until the rod loads, then sweep",
+    ],
+    mistakes: ["Reeling too fast because 'nothing is happening'", "Fishing it too high over deep fish", "Twitching it constantly — this bait works on a straight retrieve", "Hook point buried too deep in the plastic on weedless rigs"],
+    tips: ["White or pearl around shad, green pumpkin around bluegill", "In muddy water go bigger and darker, not smaller", "For snakehead, wake it just under the surface along grass edges"],
+  },
+  {
+    id: "senko", name: "Senko (Stickbait)", type: "senko", diff: "Beginner", best: "The best 'they won't bite anything' bait • pressured or cold fish",
+    what: "A plain soft stick worm with zero action added by you. Rigged weightless, it shimmies as it falls, and the fall IS the presentation. Catches fish when nothing else will.",
+    gear: ["Rod: 7' medium, fast tip", "Line: 10–15 lb fluoro or braid + leader", "Wacky rig: O-ring in the middle, hook through the ring (easiest)", "Texas rig: weedless, for throwing into cover"],
+    steps: [
+      "Cast to a target — dock post, laydown, grass hole, seawall shade",
+      "Do nothing. Let it fall on slack line and watch where line enters the water",
+      "If the line jumps, ticks, or starts swimming sideways: reel down and sweep",
+      "After it hits bottom, wait 5 seconds, lift the rod to 11 o'clock, drop it, let it fall again",
+      "Two or three falls per cast, then reel in and hit the next target",
+    ],
+    mistakes: ["Working it — the bait fishes itself, twitching kills the action", "Not watching the line — 80% of bites happen on the fall and you never feel them", "Fishing it fast through open water like a moving bait", "Too-heavy line killing the fall in clear water"],
+    tips: ["Green pumpkin is the answer 90% of the time", "5-inch is standard; drop to 4-inch when fish are picky", "Count the fall: if it stops early, a fish has it"],
+  },
+  {
+    id: "texas_worm", name: "Texas-Rig Worm", type: "worm", diff: "Beginner+", best: "Summer • fishing IN the cover, not around it • bottom feeders",
+    what: "A soft worm rigged fully weedless with a bullet weight in front. It slides through bushes, grass, and wood where big fish live and few anglers throw.",
+    gear: ["Rod: 7'–7'3\" medium-heavy, fast", "Line: 15–17 lb fluoro (or 50 lb braid in heavy cover)", "3/0–4/0 offset EWG hook, ⅛–⅜ oz bullet weight", "Peg the weight with a bobber stop when pitching into cover"],
+    steps: [
+      "Pitch it quietly into the thickest cover you can find — accuracy beats distance",
+      "Let it fall on semi-slack line, watching the line the whole way down",
+      "Drag it 6 inches with the rod (not the reel), then shake the slack, then pause",
+      "A bite is a 'tick-tick' or mushy weight. Drop the rod tip, reel up slack",
+      "Set the hook HARD, straight up — you have to drive the hook through the plastic",
+    ],
+    mistakes: ["Moving it with the reel instead of the rod — you lose all feel", "Weak hooksets — this rig demands a real swing", "Fishing open water with it — it shines in cover", "Ignoring bites that just feel 'heavy' or 'spongy'"],
+    tips: ["When you feel weirdness, it's a fish. Set. Hooksets are free", "Green pumpkin or junebug; big 10-inch worms in summer heat", "Slow down: 20+ seconds per pause when water is hot or cold"],
+  },
+  {
+    id: "spinnerbait", name: "Spinnerbait", type: "spinnerbait", diff: "Beginner", best: "Windy days • stained water • around wood without snagging",
+    what: "A bent-wire bait with flashing blades and a skirt. Nearly snagless, so you can throw it into laydowns and stumps where other treble-hook baits die.",
+    gear: ["Rod: 7' medium-heavy", "Line: 15–17 lb fluoro or mono", "⅜ oz double willow for clear-ish, ½ oz Colorado blade for muddy", "Wind is your friend — always throw it on the windblown bank"],
+    steps: [
+      "Cast past wood or a grass edge, engage the reel as it lands",
+      "Reel steady so blades turn just below the surface, or count it deeper",
+      "Bump it into every log and stump on purpose — deflection triggers strikes",
+      "When it deflects, pause a half second and let it flutter",
+      "Bites are violent — just keep reeling and lean into it, no big swing needed",
+    ],
+    mistakes: ["Avoiding the wood — contact is the whole point", "Fishing it on calm, clear, sunny days when fish can inspect it", "One speed the whole day — vary it until fish tell you", "Retiring it after a bent wire — just bend it back straight"],
+    tips: ["White in clear, chartreuse/white in stained, all-chartreuse in mud", "Slow-roll it along bottom in cold water", "Short strikes? Add a trailer hook"],
+  },
+  {
+    id: "buzzbait", name: "Buzzbait", type: "buzzbait", diff: "Intermediate", best: "Dawn/dusk • warm water • calling fish up out of grass",
+    what: "A topwater spinnerbait with a prop that squeaks and gurgles across the surface. It draws vicious surface strikes and finds aggressive fish fast.",
+    gear: ["Rod: 7' medium-heavy, moderate tip", "Reel: 7:1+ so you can keep it up easily", "Line: 40–50 lb braid or 17 lb mono (floats)", "⅜ oz is the standard"],
+    steps: [
+      "Start reeling BEFORE it lands so it never sinks",
+      "Reel just fast enough to keep the prop gurgling on the surface — slower is better",
+      "Run it tight along grass edges, over submerged wood, parallel to banks",
+      "On the blowup: keep reeling, do not set until you feel the fish",
+      "Then sweep sideways and keep winding",
+    ],
+    mistakes: ["Setting on the explosion — same rule as the frog: feel first", "Reeling too fast all day", "Quitting after missed fish — throw back or follow with a senko", "Ignoring it after dark — night buzzing catches giants"],
+    tips: ["A squeaky, dry prop catches more — leave it in the sun, don't oil it", "Black at night or low light, white in daylight", "Bend the blade shaft down slightly to slow it down"],
+  },
+  {
+    id: "fluke", name: "Fluke (Soft Jerkbait)", type: "fluke", diff: "Intermediate", best: "The follow-up bait • schooling fish • clear-ish water",
+    what: "A weightless soft baitfish that darts erratically like a dying shad. The best bait to throw back at a fish that missed a topwater.",
+    gear: ["Rod: 6'10\"–7' medium, fast tip", "Line: 12–15 lb fluoro or braid + leader", "4/0–5/0 offset EWG hook, no weight", "Rig it perfectly straight or it will spin"],
+    steps: [
+      "Cast to the target and let it sink a few seconds on slack line",
+      "Twitch-twitch-pause with the rod tip down, always leaving slack — slack makes it dart",
+      "Vary it: two hard snaps, long pause; one soft twitch, short pause",
+      "The pause is when they eat. Watch your line for jumps or sideways movement",
+      "When the line ticks: reel down until you feel weight, then sweep",
+    ],
+    mistakes: ["Tight-line twitching — kills the darting action completely", "Pauses too short: count a full 3–5 seconds", "Bait rigged crooked so it corkscrews", "Setting immediately on the tick before reeling down"],
+    tips: ["Pearl white around shad — you want to see it to track it", "Missed frog fish? Fluke in the hole. It converts", "Dead-stick it: some days they only eat it sitting still"],
+  },
+  {
+    id: "squarebill", name: "Squarebill Crankbait", type: "crankbait", diff: "Beginner+", best: "Shallow wood and rock • 1–5 ft • cold or windy days",
+    what: "A fat wobbling plug with a square lip that deflects off cover instead of snagging. Built to be banged into things — the deflection is the trigger.",
+    gear: ["Rod: 7' medium, moderate (glass is ideal)", "Reel: slower, 5.4:1–6.4:1", "Line: 12–15 lb fluoro or mono", "A softer rod keeps fish pinned on trebles"],
+    steps: [
+      "Cast past cover so the bait reaches full depth before it gets there",
+      "Reel it INTO the stump, rock, or riprap on purpose",
+      "The moment it hits, pause and let it float up a beat, then resume",
+      "Grind bottom on flats — kick up mud like a fleeing craw",
+      "Fish load up on trebles: no big hookset, just sweep and keep steady pressure",
+    ],
+    mistakes: ["Steering around cover — contact is the strike trigger", "Swinging hard and ripping trebles out — sweep, don't jack", "Playing fish too tight; let the rod cushion the fight", "Not re-tying — crankbait line gets shredded on rock"],
+    tips: ["Craw colors (red/orange) in spring, shad colors rest of year", "If it runs sideways, tune it: bend the line tie opposite direction", "Windy + riprap + squarebill = automatic"],
+  },
+  {
+    id: "walker", name: "Walking Bait (Spook)", type: "walker", diff: "Intermediate", best: "Calm mornings • points and flats • drawing fish from distance",
+    what: "A cigar-shaped topwater that glides side to side ('walk the dog'). Covers water on top and pulls fish up from surprisingly deep.",
+    gear: ["Rod: 6'8\"–7' medium, soft tip", "Line: 30 lb braid + short mono leader, or straight mono (floats)", "Never fluorocarbon — it sinks and kills the action"],
+    steps: [
+      "Cast long, past where you expect fish",
+      "Rod tip down. Twitch-twitch-twitch in rhythm while reeling ONLY the slack",
+      "The slack between twitches is what lets the head glide left-right",
+      "Keep it coming steady past blowups — don't stop after a miss",
+      "Feel the weight, then sweep. Never set on the splash",
+    ],
+    mistakes: ["Reeling tight while twitching — the bait just drags forward", "Stopping on a blowup: keep it walking, they'll come back", "Working it too fast in cold water, too slow when fish are fired up", "Braid tip-wrapping the front hook — pause and flick it off"],
+    tips: ["Practice the rhythm in open water until it's automatic — this bait is 100% cadence", "Bone color is the do-everything pick", "Walk it in place next to targets: big twitches, all slack"],
+  },
+  {
+    id: "jig", name: "Skirted Jig", type: "jig", diff: "Intermediate+", best: "Big-fish bait • year-round • wood, rock, and grass edges",
+    what: "A weedless skirted head with a craw trailer. It imitates a crawfish and consistently catches a bigger class of fish than anything else on the bottom.",
+    gear: ["Rod: 7'2\"–7'4\" heavy, fast", "Line: 17–20 lb fluoro or 50 lb braid", "⅜–½ oz flipping jig + craw trailer", "Sharp hook check every few casts"],
+    steps: [
+      "Pitch to hard targets: laydowns, dock posts, rock transitions",
+      "Let it fall on semi-slack; most bites are on the initial fall",
+      "Hop it twice with sharp rod snaps, then drag and dead-stick 5 seconds",
+      "Bites: a tick, a thump, or the line just moving off sideways",
+      "Reel down fast and set hard — heavy rod, heavy hook, big swing",
+    ],
+    mistakes: ["Fishing it fast like a moving bait", "Missing 'pressure bites' — if it feels like wet leaves, swing", "Skipping the trailer or using a dead, torn one", "Throwing it everywhere instead of high-percentage targets"],
+    tips: ["Green pumpkin/brown on sunny days, black/blue in dirty water or low light", "Trailer action matters: flappy claws in warm water, subtle in cold", "The bigger the target, the longer you soak it"],
+  },
+  {
+    id: "ned", name: "Ned Rig", type: "ned", diff: "Beginner", best: "Tough days • cold fronts • numbers of fish when nothing works",
+    what: "A short buoyant stick worm on a light mushroom head that stands up off bottom. The most effortless bite-getter in fishing — it just gets eaten.",
+    gear: ["Rod: 6'10\"–7' medium-light spinning", "Reel: 2500 spinning", "Line: 10 lb braid to 8 lb fluoro leader", "1/10–⅙ oz mushroom head, 2.75\" TRD worm"],
+    steps: [
+      "Cast it out and let it sink to bottom on slack line",
+      "Do almost nothing: drag it 3–4 inches, shake once, let it sit",
+      "The worm stands up and quivers on its own while sitting still",
+      "Bites feel like weight or a slow pull — no violent thump",
+      "No big hookset: reel fast until the rod loads and lean back",
+    ],
+    mistakes: ["Overworking it — the deadlier you fish it, the more bites", "Heavy line and heavy heads killing the glide and stand-up action", "Hard hooksets that bend the light wire hook", "Skipping it because it looks too small to matter"],
+    tips: ["Green pumpkin. Don't overthink Ned colors", "Post-front bluebird sky? This is the bait", "Fish it on the deep side of the grass line when fish pull out"],
+  },
+];
+
+// ---------- prompts ----------
+const SPECIES = ["Snakehead", "Largemouth Bass", "Both"];
+const SKIES = ["Sunny", "Partly Cloudy", "Overcast", "Rain"];
+const WINDS = ["Calm", "Light Breeze", "Windy"];
+const WATERS = ["Clear", "Stained", "Muddy"];
+const SYMPTOMS = ["No bites at all", "Blowups but no hookups", "Short strikes / nipping", "Followers won't commit", "Losing fish mid-fight", "Snagging constantly", "Bite died mid-day"];
+const TYPES = "frog, chatterbait, spinnerbait, swimbait, fluke, senko, worm, crankbait, jig, walker, buzzbait, popper, spoon, ned";
+
+const LURE_SHAPE = `{"type":"one of: ${TYPES}","lure":"lure name","spec":"color / size","why":"one short sentence","where":["2-3 items, under 8 words each"],"rod":["2-3 items: rod angle + hookset, under 8 words"],"retrieve":["3-4 items: exact cadence/speed/pauses, under 10 words"],"tips":["2-3 items, under 10 words"]}`;
+
+async function fetchGamePlan(p) {
+  const prompt = `Expert fishing guide, Mid-Atlantic bass and northern snakehead, coaching a beginner. Build a game plan:
+- Location: ${p.location || "unspecified"} | Time: ${p.when} | Target: ${p.species}
+- Sky: ${p.sky} | Wind: ${p.wind} | Water: ${p.water} | Air: ${p.temp ? p.temp + "°F" : "unknown"}
+${p.notes ? `- Notes: ${p.notes}` : ""}
+
+Respond with ONLY valid JSON, no fences, no other text:
+{"score":1-100 bite score integer for these conditions,"window":"best bite window today, under 10 words","summary":"1 short sentence on the bite and why","primary":${LURE_SHAPE},"backup":${LURE_SHAPE}}
+
+Beginner-friendly, short punchy fragments, decisive, no hedging.`;
+  const data = await callClaude({ model: "claude-sonnet-4-6", max_tokens: 1000, messages: [{ role: "user", content: prompt }] });
+  const text = textFromResponse(data);
+  return { json: extractJSON(text), raw: text };
+}
+
+async function fetchScan(p) {
+  const prompt = `Expert fishing guide coaching a beginner. Analyze this angler's photo (water, cover, catch, or tackle). Target: ${p.species}. ${p.context ? `Angler says: ${p.context}` : ""}
+
+Respond with ONLY valid JSON, no fences, no other text:
+{"read":"2 short sentences: what you see, what it means","primary":${LURE_SHAPE}}
+
+In "where", point to exact spots IN THIS PHOTO. Short punchy fragments. Decisive.`;
+  const data = await callClaude({
+    model: "claude-sonnet-4-6", max_tokens: 1000,
+    messages: [{ role: "user", content: [
+      { type: "image", source: { type: "base64", media_type: "image/jpeg", data: p.base64 } },
+      { type: "text", text: prompt },
+    ]}],
+  });
+  const text = textFromResponse(data);
+  return { json: extractJSON(text), raw: text };
+}
+
+async function fetchFix(p) {
+  const prompt = `Expert fishing guide diagnosing why a beginner isn't catching. 
+- Problem: ${p.symptom}
+- Throwing: ${p.throwing || "not specified"}
+- Target: ${p.species} | Water: ${p.water} | Sky: ${p.sky}
+${p.notes ? `- Details: ${p.notes}` : ""}
+
+Respond with ONLY valid JSON, no fences, no other text:
+{"diagnosis":"2 short sentences: most likely cause in plain language","causes":["2-3 likely causes ranked, under 10 words each"],"fixes":["3-4 fixes to try IN ORDER right now, under 12 words each"],"switch":${LURE_SHAPE}}
+
+"switch" = the lure to change to if fixes fail. Beginner-friendly, decisive.`;
+  const data = await callClaude({ model: "claude-sonnet-4-6", max_tokens: 1000, messages: [{ role: "user", content: prompt }] });
+  const text = textFromResponse(data);
+  return { json: extractJSON(text), raw: text };
+}
 
 // ---------- styles ----------
 const css = `
@@ -94,8 +320,8 @@ const css = `
 :root{--pool:#0d211c;--pool2:#122b24;--card:#16332b;--line:#25473d;--bone:#ece8dc;--dim:#9fb3a9;--chart:#cfe84a;--chart-deep:#a9c22e;--rust:#d1704a}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--pool);color:var(--bone);font-family:'Barlow',sans-serif;-webkit-font-smoothing:antialiased}
-.app{max-width:560px;margin:0 auto;min-height:100vh;padding-bottom:84px}
-.masthead{padding:18px 18px 12px;border-bottom:1px solid var(--line)}
+.app{max-width:560px;margin:0 auto;min-height:100vh;padding-bottom:86px}
+.masthead{padding:18px 18px 12px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:flex-end}
 .eyebrow{font-family:'Barlow Condensed';font-weight:600;letter-spacing:.22em;text-transform:uppercase;font-size:11px;color:var(--chart)}
 h1{font-family:'Barlow Condensed';font-weight:800;font-size:30px;line-height:1;text-transform:uppercase;margin-top:4px}
 h1 em{font-style:normal;color:var(--chart)}
@@ -116,7 +342,15 @@ input:focus{border-color:var(--chart-deep)}
 .bobber{width:14px;height:14px;border-radius:50%;background:var(--rust);border-top:5px solid var(--bone);animation:bob 1.1s ease-in-out infinite}
 @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
 @media (prefers-reduced-motion:reduce){.bobber{animation:none}}
-.summary{color:var(--dim);font-size:14px;line-height:1.45;margin:14px 2px 12px}
+/* bite score */
+.score-strip{display:flex;gap:12px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:12px}
+.dial{width:64px;height:64px;flex-shrink:0;position:relative}
+.dial svg{transform:rotate(-90deg)}
+.dial .num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed';font-weight:800;font-size:22px}
+.score-txt{flex:1}
+.score-lab{font-family:'Barlow Condensed';font-weight:800;letter-spacing:.14em;text-transform:uppercase;font-size:11px;color:var(--chart)}
+.score-win{font-size:14px;font-weight:600;margin-top:2px}
+.score-sum{font-size:13px;color:var(--dim);margin-top:3px;line-height:1.4}
 /* lure card */
 .lure{border:1px solid var(--chart-deep);border-radius:14px;overflow:hidden;margin-bottom:12px;background:var(--card);cursor:pointer}
 .lure.backup{border-color:var(--line)}
@@ -127,89 +361,72 @@ input:focus{border-color:var(--chart-deep)}
 .lure.backup .lure-tag{color:var(--dim)}
 .lure-name{font-family:'Barlow Condensed';font-weight:800;font-size:22px;text-transform:uppercase;line-height:1.02;margin-top:2px}
 .lure-spec{color:var(--dim);font-size:13px;font-weight:500;margin-top:3px}
+.lure-why{color:var(--bone);font-size:13px;margin-top:4px;line-height:1.35}
 .tapme{display:flex;justify-content:center;align-items:center;gap:6px;padding:8px;border-top:1px solid var(--line);color:var(--chart);font-family:'Barlow Condensed';font-weight:600;letter-spacing:.14em;text-transform:uppercase;font-size:11px}
 .chev{transition:transform .18s}
 .open .chev{transform:rotate(180deg)}
 .detail{border-top:1px solid var(--line);padding:4px 14px 14px}
 .sect{margin-top:12px}
 .sect-h{display:flex;align-items:center;gap:8px;font-family:'Barlow Condensed';font-weight:800;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--chart);margin-bottom:6px}
-.sect-h .ico{font-size:15px}
-.sect li{list-style:none;font-size:15px;line-height:1.4;padding:5px 0 5px 14px;position:relative}
+.sect li{list-style:none;font-size:15px;line-height:1.42;padding:5px 0 5px 14px;position:relative}
 .sect li::before{content:"";position:absolute;left:0;top:13px;width:6px;height:6px;border-radius:2px;background:var(--chart-deep)}
+.sect.warn li::before{background:var(--rust)}
 .frame{border:1px dashed var(--line);border-radius:12px;background:var(--pool2);min-height:180px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;color:var(--dim);font-size:14px;cursor:pointer;overflow:hidden;margin-bottom:14px}
 .frame img{width:100%;display:block}
 .frame .cam{font-size:34px}
 .read{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:13px;margin-bottom:12px}
 .read h3{font-family:'Barlow Condensed';font-weight:800;font-size:14px;letter-spacing:.12em;text-transform:uppercase;color:var(--chart);margin-bottom:5px}
 .read p{font-size:14px;line-height:1.5;white-space:pre-wrap}
+/* learn */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.gcard{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;cursor:pointer}
+.gcard .lure-art{width:100%;height:64px;margin-bottom:8px}
+.gname{font-family:'Barlow Condensed';font-weight:800;font-size:16px;text-transform:uppercase;line-height:1.05}
+.badge{display:inline-block;margin-top:5px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:#15230a;background:var(--chart);border-radius:4px;padding:2px 6px}
+.badge.mid{background:var(--rust);color:var(--bone)}
+.guide-head{display:flex;gap:12px;align-items:center;margin-bottom:8px}
+.guide-head .lure-art{width:110px;height:72px}
+.back{background:none;border:none;color:var(--chart);font-family:'Barlow Condensed';font-weight:600;letter-spacing:.14em;text-transform:uppercase;font-size:12px;cursor:pointer;padding:0 0 12px}
+.best{background:var(--pool2);border-left:3px solid var(--chart);border-radius:0 8px 8px 0;padding:9px 12px;font-size:13px;color:var(--bone);margin:10px 0}
+.what{font-size:14px;line-height:1.5;color:var(--dim)}
+.learn-sub{color:var(--dim);font-size:13px;margin-bottom:12px;line-height:1.4}
 .tabs{position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:center;background:rgba(13,33,28,.96);border-top:1px solid var(--line);backdrop-filter:blur(6px)}
 .tabs-inner{display:flex;width:100%;max-width:560px}
-.tab{flex:1;padding:13px 0 17px;background:none;border:none;color:var(--dim);cursor:pointer;font-family:'Barlow Condensed';font-weight:600;letter-spacing:.16em;text-transform:uppercase;font-size:13px}
+.tab{flex:1;padding:12px 0 16px;background:none;border:none;color:var(--dim);cursor:pointer;font-family:'Barlow Condensed';font-weight:600;letter-spacing:.1em;text-transform:uppercase;font-size:12px}
 .tab.on{color:var(--chart)}
-.tab .bar{width:34px;height:3px;background:transparent;margin:6px auto 0;border-radius:2px}
+.tab .bar{width:28px;height:3px;background:transparent;margin:5px auto 0;border-radius:2px}
 .tab.on .bar{background:var(--chart)}
 `;
 
-const SPECIES = ["Snakehead", "Largemouth Bass", "Both"];
-const SKIES = ["Sunny", "Partly Cloudy", "Overcast", "Rain"];
-const WINDS = ["Calm", "Light Breeze", "Windy"];
-const WATERS = ["Clear", "Stained", "Muddy"];
-const TYPES = "frog, chatterbait, spinnerbait, swimbait, fluke, senko, worm, crankbait, jig, walker, buzzbait, popper, spoon, ned";
+// ---------- small components ----------
+const Loading = ({ msg }) => (<div className="loading"><div className="bobber" /><span>{msg}</span></div>);
 
-const LURE_SHAPE = `{"type":"one of: ${TYPES}","lure":"lure name","spec":"color / size","where":["2-3 items, under 8 words each"],"rod":["2-3 items: rod angle + hookset, under 8 words each"],"retrieve":["3-4 items: exact cadence/speed/pauses, under 10 words each"],"tips":["2-3 items, under 10 words each"]}`;
-
-async function fetchGamePlan(p) {
-  const prompt = `Expert fishing guide, Mid-Atlantic bass and northern snakehead. Build a game plan:
-- Location: ${p.location || "unspecified"} | Time: ${p.when} | Target: ${p.species}
-- Sky: ${p.sky} | Wind: ${p.wind} | Water: ${p.water} | Air: ${p.temp ? p.temp + "°F" : "unknown"}
-${p.notes ? `- Notes: ${p.notes}` : ""}
-
-Respond with ONLY valid JSON, no fences, no other text:
-{"summary":"1 short sentence on the bite","primary":${LURE_SHAPE},"backup":${LURE_SHAPE}}
-
-Short punchy fragments, not sentences. Decisive. No hedging.`;
-  const data = await callClaude({
-    model: "claude-sonnet-4-6",
-    max_tokens: 1000,
-    messages: [{ role: "user", content: prompt }],
-  });
-  const text = textFromResponse(data);
-  return { json: extractJSON(text), raw: text };
-}
-
-async function fetchScan(p) {
-  const prompt = `Expert fishing guide. Analyze this angler's photo (water, cover, catch, or tackle). Target: ${p.species}. ${p.context ? `Angler says: ${p.context}` : ""}
-
-Respond with ONLY valid JSON, no fences, no other text:
-{"read":"2 short sentences: what you see, what it means","primary":${LURE_SHAPE}}
-
-In "where", point to exact spots IN THIS PHOTO. Short punchy fragments. Decisive.`;
-  const data = await callClaude({
-    model: "claude-sonnet-4-6",
-    max_tokens: 1000,
-    messages: [{
-      role: "user",
-      content: [
-        { type: "image", source: { type: "base64", media_type: "image/jpeg", data: p.base64 } },
-        { type: "text", text: prompt },
-      ],
-    }],
-  });
-  const text = textFromResponse(data);
-  return { json: extractJSON(text), raw: text };
-}
-
-// ---------- components ----------
-const Loading = ({ msg }) => (
-  <div className="loading"><div className="bobber" /><span>{msg}</span></div>
+const Sect = ({ ico, title, items, warn }) => !items?.length ? null : (
+  <div className={`sect${warn ? " warn" : ""}`}>
+    <div className="sect-h"><span>{ico}</span>{title}</div>
+    <ul>{items.map((s, i) => <li key={i}>{s}</li>)}</ul>
+  </div>
 );
 
-function Sect({ ico, title, items }) {
-  if (!items?.length) return null;
+function ScoreDial({ score, window: win, summary }) {
+  const s = Math.max(1, Math.min(100, Number(score) || 0));
+  const color = s >= 70 ? "#cfe84a" : s >= 40 ? "#e8c84a" : "#d1704a";
+  const r = 26, c = 2 * Math.PI * r;
   return (
-    <div className="sect">
-      <div className="sect-h"><span className="ico">{ico}</span>{title}</div>
-      <ul>{items.map((s, i) => <li key={i}>{s}</li>)}</ul>
+    <div className="score-strip">
+      <div className="dial">
+        <svg width="64" height="64">
+          <circle cx="32" cy="32" r={r} stroke="#25473d" strokeWidth="6" fill="none" />
+          <circle cx="32" cy="32" r={r} stroke={color} strokeWidth="6" fill="none"
+            strokeDasharray={c} strokeDashoffset={c * (1 - s / 100)} strokeLinecap="round" />
+        </svg>
+        <div className="num" style={{ color }}>{s}</div>
+      </div>
+      <div className="score-txt">
+        <div className="score-lab">Bite score</div>
+        {win && <div className="score-win">{win}</div>}
+        {summary && <div className="score-sum">{summary}</div>}
+      </div>
     </div>
   );
 }
@@ -225,6 +442,7 @@ function LureCard({ tag, data, backup, startOpen }) {
           <div className="lure-tag">{tag}</div>
           <div className="lure-name">{data.lure}</div>
           <div className="lure-spec">{data.spec}</div>
+          {data.why && <div className="lure-why">{data.why}</div>}
         </div>
       </div>
       {open && (
@@ -252,12 +470,15 @@ const ChipRow = ({ options, value, onChange }) => (
 export default function App() {
   const [tab, setTab] = useState("plan");
 
-  const [location, setLocation] = useState("");
-  const [when, setWhen] = useState("");
+  // shared conditions
   const [species, setSpecies] = useState("Snakehead");
   const [sky, setSky] = useState("Partly Cloudy");
   const [wind, setWind] = useState("Light Breeze");
   const [water, setWater] = useState("Stained");
+
+  // plan
+  const [location, setLocation] = useState("");
+  const [when, setWhen] = useState("");
   const [temp, setTemp] = useState("");
   const [notes, setNotes] = useState("");
   const [plan, setPlan] = useState(null);
@@ -265,6 +486,7 @@ export default function App() {
   const [planBusy, setPlanBusy] = useState(false);
   const [planErr, setPlanErr] = useState("");
 
+  // scan
   const [preview, setPreview] = useState(null);
   const [b64, setB64] = useState(null);
   const [scanContext, setScanContext] = useState("");
@@ -273,6 +495,18 @@ export default function App() {
   const [scanBusy, setScanBusy] = useState(false);
   const [scanErr, setScanErr] = useState("");
   const fileRef = useRef(null);
+
+  // learn
+  const [guide, setGuide] = useState(null);
+
+  // fix
+  const [symptom, setSymptom] = useState(SYMPTOMS[0]);
+  const [throwing, setThrowing] = useState("");
+  const [fixNotes, setFixNotes] = useState("");
+  const [fix, setFix] = useState(null);
+  const [fixRaw, setFixRaw] = useState("");
+  const [fixBusy, setFixBusy] = useState(false);
+  const [fixErr, setFixErr] = useState("");
 
   useEffect(() => {
     const d = new Date();
@@ -288,12 +522,10 @@ export default function App() {
         when: when ? new Date(when).toLocaleString() : new Date().toLocaleString(),
         species, sky, wind, water, temp: temp.trim(), notes: notes.trim(),
       });
-      if (json) setPlan(json);
-      else if (raw) setPlanRaw(raw);
+      if (json) setPlan(json); else if (raw) setPlanRaw(raw);
       else setPlanErr("Empty response. Hit the button again.");
-    } catch (e) {
-      setPlanErr(`Couldn't build the plan: ${e.message || e}. Try again.`);
-    } finally { setPlanBusy(false); }
+    } catch (e) { setPlanErr(`Couldn't build the plan: ${e.message || e}. Try again.`); }
+    finally { setPlanBusy(false); }
   };
 
   const onPhoto = async (e) => {
@@ -311,23 +543,38 @@ export default function App() {
     setScanBusy(true); setScanErr(""); setScan(null); setScanRaw("");
     try {
       const { json, raw } = await fetchScan({ base64: b64, species, context: scanContext.trim() });
-      if (json) setScan(json);
-      else if (raw) setScanRaw(raw);
+      if (json) setScan(json); else if (raw) setScanRaw(raw);
       else setScanErr("Empty response. Hit scan again.");
-    } catch (e) {
-      setScanErr(`Scan failed: ${e.message || e}. Try again.`);
-    } finally { setScanBusy(false); }
+    } catch (e) { setScanErr(`Scan failed: ${e.message || e}. Try again.`); }
+    finally { setScanBusy(false); }
   };
+
+  const runFix = async () => {
+    setFixBusy(true); setFixErr(""); setFix(null); setFixRaw("");
+    try {
+      const { json, raw } = await fetchFix({
+        symptom, throwing: throwing.trim(), species, water, sky, notes: fixNotes.trim(),
+      });
+      if (json) setFix(json); else if (raw) setFixRaw(raw);
+      else setFixErr("Empty response. Try again.");
+    } catch (e) { setFixErr(`Couldn't diagnose: ${e.message || e}. Try again.`); }
+    finally { setFixBusy(false); }
+  };
+
+  const g = guide ? SCHOOL.find((x) => x.id === guide) : null;
 
   return (
     <>
       <style>{css}</style>
       <div className="app">
         <div className="masthead">
-          <div className="eyebrow">Bank-side game plans</div>
-          <h1>What to <em>Throw</em></h1>
+          <div>
+            <div className="eyebrow">Your AI fishing guide</div>
+            <h1>What to <em>Throw</em></h1>
+          </div>
         </div>
 
+        {/* ---------- GAME PLAN ---------- */}
         {tab === "plan" && (
           <div className="pad">
             <div className="field">
@@ -358,12 +605,12 @@ export default function App() {
             </button>
 
             {planErr && <div className="err">{planErr}</div>}
-            {planBusy && <Loading msg="Matching lure to conditions..." />}
+            {planBusy && <Loading msg="Scoring the bite and matching lures..." />}
             {planRaw && !plan && <div className="read" style={{ marginTop: 16 }}><h3>Game plan</h3><p>{planRaw}</p></div>}
 
             {plan && (
               <div style={{ marginTop: 14 }}>
-                {plan.summary && <div className="summary">{plan.summary}</div>}
+                <ScoreDial score={plan.score} window={plan.window} summary={plan.summary} />
                 <LureCard tag="Tie this on" data={plan.primary} />
                 <LureCard tag="Backup" data={plan.backup} backup />
               </div>
@@ -371,6 +618,7 @@ export default function App() {
           </div>
         )}
 
+        {/* ---------- PHOTO SCAN ---------- */}
         {tab === "scan" && (
           <div className="pad">
             <input ref={fileRef} type="file" accept="image/*" capture="environment"
@@ -394,9 +642,7 @@ export default function App() {
               {scanBusy ? "Scanning..." : "Scan & tell me what to do"}
             </button>
             {preview && !scanBusy && (
-              <button className="go alt" style={{ marginTop: 10 }} onClick={() => fileRef.current?.click()}>
-                Retake photo
-              </button>
+              <button className="go alt" style={{ marginTop: 10 }} onClick={() => fileRef.current?.click()}>Retake photo</button>
             )}
 
             {scanErr && <div className="err">{scanErr}</div>}
@@ -412,10 +658,91 @@ export default function App() {
           </div>
         )}
 
+        {/* ---------- LURE SCHOOL ---------- */}
+        {tab === "learn" && (
+          <div className="pad">
+            {!g && (
+              <>
+                <div className="learn-sub">Every lure that matters for bass and snakehead — what it is, exact gear, and how to fish it the right way. No internet needed, works on the bank.</div>
+                <div className="grid">
+                  {SCHOOL.map((s) => (
+                    <div className="gcard" key={s.id} onClick={() => setGuide(s.id)}>
+                      <div className="lure-art"><LureArt type={s.type} /></div>
+                      <div className="gname">{s.name}</div>
+                      <span className={`badge${s.diff.includes("Inter") ? " mid" : ""}`}>{s.diff}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+            {g && (
+              <>
+                <button className="back" onClick={() => setGuide(null)}>← All lures</button>
+                <div className="guide-head">
+                  <div className="lure-art"><LureArt type={g.type} /></div>
+                  <div>
+                    <div className="lure-name" style={{ fontSize: 24 }}>{g.name}</div>
+                    <span className={`badge${g.diff.includes("Inter") ? " mid" : ""}`}>{g.diff}</span>
+                  </div>
+                </div>
+                <div className="best">{g.best}</div>
+                <p className="what">{g.what}</p>
+                <Sect ico="🧰" title="Gear & rigging" items={g.gear} />
+                <Sect ico="🔄" title="How to fish it" items={g.steps} />
+                <Sect ico="⚠️" title="Why you're not catching" items={g.mistakes} warn />
+                <Sect ico="💡" title="Pro tips" items={g.tips} />
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ---------- FIX MY BITE ---------- */}
+        {tab === "fix" && (
+          <div className="pad">
+            <div className="learn-sub">Not catching? Tell me what's happening and I'll diagnose it like a guide standing next to you.</div>
+            <div className="field"><label>What's going wrong?</label><ChipRow options={SYMPTOMS} value={symptom} onChange={setSymptom} /></div>
+            <div className="field">
+              <label>What are you throwing?</label>
+              <input type="text" placeholder="e.g. white chatterbait, black frog"
+                value={throwing} onChange={(e) => setThrowing(e.target.value)} />
+            </div>
+            <div className="field"><label>Target</label><ChipRow options={SPECIES} value={species} onChange={setSpecies} /></div>
+            <div className="field"><label>Water clarity</label><ChipRow options={WATERS} value={water} onChange={setWater} /></div>
+            <div className="field"><label>Sky</label><ChipRow options={SKIES} value={sky} onChange={setSky} /></div>
+            <div className="field">
+              <label>Details (optional)</label>
+              <input type="text" placeholder="e.g. fishing 3 hours, saw two follows"
+                value={fixNotes} onChange={(e) => setFixNotes(e.target.value)} />
+            </div>
+            <button className="go" onClick={runFix} disabled={fixBusy}>
+              {fixBusy ? "Diagnosing..." : "Fix my bite"}
+            </button>
+
+            {fixErr && <div className="err">{fixErr}</div>}
+            {fixBusy && <Loading msg="Working out what the fish are telling you..." />}
+            {fixRaw && !fix && <div className="read" style={{ marginTop: 16 }}><h3>Diagnosis</h3><p>{fixRaw}</p></div>}
+
+            {fix && (
+              <div style={{ marginTop: 14 }}>
+                {fix.diagnosis && <div className="read"><h3>Diagnosis</h3><p>{fix.diagnosis}</p></div>}
+                <Sect ico="🔍" title="Likely causes" items={fix.causes} warn />
+                <Sect ico="✅" title="Try this, in order" items={fix.fixes} />
+                {fix.switch?.lure && (
+                  <div style={{ marginTop: 14 }}>
+                    <LureCard tag="If that fails, switch to" data={fix.switch} />
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="tabs">
           <div className="tabs-inner">
             <button className={`tab${tab === "plan" ? " on" : ""}`} onClick={() => setTab("plan")}>Game Plan<div className="bar" /></button>
-            <button className={`tab${tab === "scan" ? " on" : ""}`} onClick={() => setTab("scan")}>Photo Scan<div className="bar" /></button>
+            <button className={`tab${tab === "scan" ? " on" : ""}`} onClick={() => setTab("scan")}>Scan<div className="bar" /></button>
+            <button className={`tab${tab === "learn" ? " on" : ""}`} onClick={() => { setTab("learn"); setGuide(null); }}>Lure School<div className="bar" /></button>
+            <button className={`tab${tab === "fix" ? " on" : ""}`} onClick={() => setTab("fix")}>Fix My Bite<div className="bar" /></button>
           </div>
         </div>
       </div>
