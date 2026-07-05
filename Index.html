@@ -1,0 +1,438 @@
+import { useState, useRef, useEffect } from "react";
+
+// ---------- helpers ----------
+const extractJSON = (raw) => {
+  const clean = raw.replace(/```json|```/g, "").trim();
+  const start = clean.indexOf("{");
+  const end = clean.lastIndexOf("}");
+  if (start === -1 || end === -1) throw new Error("No JSON found");
+  return JSON.parse(clean.slice(start, end + 1));
+};
+
+const textFromResponse = (data) =>
+  (data.content || [])
+    .filter((b) => b.type === "text")
+    .map((b) => b.text)
+    .join("\n");
+
+const resizeImage = (file, maxDim = 1100) =>
+  new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > maxDim || height > maxDim) {
+        const scale = maxDim / Math.max(width, height);
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.82);
+      URL.revokeObjectURL(url);
+      resolve(dataUrl.split(",")[1]);
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+
+// ---------- styles ----------
+const css = `
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;800&family=Barlow:wght@400;500;600&display=swap');
+:root{
+  --pool:#0d211c;
+  --pool2:#122b24;
+  --card:#16332b;
+  --line:#25473d;
+  --bone:#ece8dc;
+  --dim:#9fb3a9;
+  --chart:#cfe84a;
+  --chart-deep:#a9c22e;
+  --rust:#d1704a;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--pool);color:var(--bone);font-family:'Barlow',sans-serif;-webkit-font-smoothing:antialiased}
+.app{max-width:560px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;padding-bottom:84px}
+.masthead{padding:22px 18px 14px;border-bottom:1px solid var(--line)}
+.eyebrow{font-family:'Barlow Condensed';font-weight:600;letter-spacing:.22em;text-transform:uppercase;font-size:11px;color:var(--chart)}
+h1{font-family:'Barlow Condensed';font-weight:800;font-size:34px;line-height:1;text-transform:uppercase;letter-spacing:.01em;margin-top:4px}
+h1 em{font-style:normal;color:var(--chart)}
+.sub{color:var(--dim);font-size:13px;margin-top:6px}
+.pad{padding:16px 18px}
+.field{margin-bottom:14px}
+label{display:block;font-family:'Barlow Condensed';font-weight:600;letter-spacing:.14em;text-transform:uppercase;font-size:11px;color:var(--dim);margin-bottom:6px}
+input[type=text], input[type=datetime-local], textarea{
+  width:100%;background:var(--pool2);border:1px solid var(--line);border-radius:8px;
+  color:var(--bone);font-family:'Barlow';font-size:16px;padding:12px 12px;outline:none}
+input:focus, textarea:focus{border-color:var(--chart-deep)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{background:var(--pool2);border:1px solid var(--line);border-radius:999px;padding:9px 16px;
+  color:var(--dim);font-size:14px;font-weight:500;cursor:pointer;transition:all .12s}
+.chip.on{background:var(--chart);border-color:var(--chart);color:#15230a;font-weight:600}
+.go{width:100%;margin-top:6px;background:var(--chart);color:#15230a;border:none;border-radius:10px;
+  padding:15px;font-family:'Barlow Condensed';font-weight:800;font-size:19px;letter-spacing:.08em;
+  text-transform:uppercase;cursor:pointer}
+.go:disabled{opacity:.55;cursor:default}
+.go.alt{background:transparent;color:var(--chart);border:1px dashed var(--chart-deep)}
+.err{background:#3a1f18;border:1px solid #6b3526;color:#f0b8a4;border-radius:8px;padding:12px;font-size:14px;margin-top:12px}
+.loading{display:flex;align-items:center;gap:12px;padding:22px 4px;color:var(--dim);font-size:14px}
+.bobber{width:14px;height:14px;border-radius:50%;background:var(--rust);border-top:5px solid var(--bone);
+  animation:bob 1.1s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+@media (prefers-reduced-motion: reduce){.bobber{animation:none}}
+/* conditions strip */
+.strip{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:16px}
+.cell{background:var(--pool2);padding:10px 8px;border-right:1px solid var(--line)}
+.cell:last-child{border-right:none}
+.cell b{display:block;font-family:'Barlow Condensed';font-weight:800;font-size:19px;color:var(--bone)}
+.cell span{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+/* tackle card — the signature */
+.tackle{border:1px solid var(--chart-deep);border-radius:12px;overflow:hidden;margin-bottom:14px}
+.tackle.backup{border-color:var(--line)}
+.tackle-head{background:var(--chart);color:#15230a;padding:10px 14px;display:flex;justify-content:space-between;align-items:center}
+.tackle.backup .tackle-head{background:var(--card);color:var(--bone)}
+.tackle-head .tag{font-family:'Barlow Condensed';font-weight:800;letter-spacing:.16em;text-transform:uppercase;font-size:12px}
+.tackle-head .conf{font-size:12px;font-weight:600}
+.tackle-body{background:var(--card);padding:14px}
+.lure-name{font-family:'Barlow Condensed';font-weight:800;font-size:26px;text-transform:uppercase;line-height:1.05}
+.lure-spec{color:var(--chart);font-size:14px;font-weight:600;margin-top:2px}
+.why{color:var(--dim);font-size:14px;line-height:1.45;margin-top:8px}
+/* steps */
+.steps{margin-top:4px}
+.step{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.step:last-child{border-bottom:none}
+.stepnum{font-family:'Barlow Condensed';font-weight:800;font-size:18px;color:var(--chart);min-width:22px}
+.step p{font-size:15px;line-height:1.45}
+.h2{font-family:'Barlow Condensed';font-weight:800;font-size:18px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--bone);margin:18px 0 6px;padding-bottom:5px;border-bottom:2px solid var(--chart)}
+.spot{font-size:14px;line-height:1.5;color:var(--bone);padding:8px 0;border-bottom:1px dashed var(--line)}
+.spot:last-child{border-bottom:none}
+/* scan */
+.frame{border:1px dashed var(--line);border-radius:12px;background:var(--pool2);min-height:190px;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;color:var(--dim);
+  font-size:14px;cursor:pointer;overflow:hidden;margin-bottom:14px}
+.frame img{width:100%;display:block}
+.frame .cam{font-size:34px}
+/* tab bar */
+.tabs{position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:center;background:rgba(13,33,28,.96);
+  border-top:1px solid var(--line);backdrop-filter:blur(6px)}
+.tabs-inner{display:flex;width:100%;max-width:560px}
+.tab{flex:1;padding:14px 0 18px;background:none;border:none;color:var(--dim);cursor:pointer;
+  font-family:'Barlow Condensed';font-weight:600;letter-spacing:.16em;text-transform:uppercase;font-size:13px}
+.tab.on{color:var(--chart)}
+.tab.on .bar{width:34px;height:3px;background:var(--chart);margin:6px auto 0;border-radius:2px}
+.tab .bar{width:34px;height:3px;background:transparent;margin:6px auto 0}
+.read{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px}
+.read h3{font-family:'Barlow Condensed';font-weight:800;font-size:15px;letter-spacing:.12em;text-transform:uppercase;color:var(--chart);margin-bottom:6px}
+.read p{font-size:14px;line-height:1.5;color:var(--bone)}
+`;
+
+// ---------- API calls ----------
+const SPECIES = ["Snakehead", "Largemouth Bass", "Both"];
+
+async function callClaude(body) {
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`Request failed (${res.status})`);
+  return res.json();
+}
+
+async function fetchGamePlan({ location, when, species, notes }) {
+  const prompt = `You are an expert fishing guide for Mid-Atlantic tidal and freshwater fisheries (bass and northern snakehead).
+
+TASK:
+1. Use web search to find the CURRENT weather for: ${location}. Get air temp, wind speed/direction, sky/cloud cover, barometric pressure trend, and recent rain. Also find today's sunrise/sunset there if possible.
+2. Based on that weather plus the trip time (${when}), location type, and target species (${species}), build a concrete fishing game plan.
+${notes ? `Angler notes: ${notes}` : ""}
+
+Your FINAL message must be ONLY a valid JSON object, no markdown fences, no commentary, in exactly this shape:
+{
+  "conditions": {"temp":"72°F","wind":"SW 8 mph","sky":"Overcast","pressure":"Falling"},
+  "summary": "1-2 sentence read on how these conditions affect the bite",
+  "primary": {"lure":"lure name","spec":"color / size / rigging","why":"why this is the #1 choice right now","confidence":"HIGH"},
+  "backup": {"lure":"...","spec":"...","why":"...","confidence":"MEDIUM"},
+  "steps": ["step 1 how to fish the primary lure - cast target, retrieve cadence, hookset", "step 2", "step 3", "step 4"],
+  "spots": ["specific type of water/cover to target #1", "#2", "#3"]
+}
+Be decisive and specific (exact retrieve speeds, pauses, rod position). No hedging.`;
+
+  const data = await callClaude({
+    model: "claude-sonnet-4-6",
+    max_tokens: 1000,
+    messages: [{ role: "user", content: prompt }],
+    tools: [{ type: "web_search_20250305", name: "web_search" }],
+  });
+  return extractJSON(textFromResponse(data));
+}
+
+async function fetchScan({ base64, species, context }) {
+  const prompt = `You are an expert fishing guide. Analyze this photo taken by an angler on the water. It may show the water/shoreline they're fishing, cover/structure, a fish they caught, or their tackle.
+
+Target species: ${species}. ${context ? `Angler says: ${context}` : ""}
+
+Respond with ONLY a valid JSON object, no markdown fences:
+{
+  "read": "2-3 sentences: what you see in the photo and what it means for fishing it (cover, depth, water clarity, ambush points — or if it's a fish/lure, what that tells us)",
+  "lure": {"name":"recommended lure","spec":"color / size / rigging"},
+  "steps": ["step 1: exactly where to cast in this scene and how to work it", "step 2", "step 3", "step 4", "step 5"]
+}
+Be decisive and specific. No hedging.`;
+
+  const data = await callClaude({
+    model: "claude-sonnet-4-6",
+    max_tokens: 1000,
+    messages: [
+      {
+        role: "user",
+        content: [
+          { type: "image", source: { type: "base64", media_type: "image/jpeg", data: base64 } },
+          { type: "text", text: prompt },
+        ],
+      },
+    ],
+  });
+  return extractJSON(textFromResponse(data));
+}
+
+// ---------- components ----------
+function Loading({ msg }) {
+  return (
+    <div className="loading">
+      <div className="bobber" />
+      <span>{msg}</span>
+    </div>
+  );
+}
+
+function TackleCard({ tag, data, backup }) {
+  if (!data) return null;
+  return (
+    <div className={`tackle${backup ? " backup" : ""}`}>
+      <div className="tackle-head">
+        <span className="tag">{tag}</span>
+        <span className="conf">{data.confidence || ""}</span>
+      </div>
+      <div className="tackle-body">
+        <div className="lure-name">{data.lure}</div>
+        <div className="lure-spec">{data.spec}</div>
+        <div className="why">{data.why}</div>
+      </div>
+    </div>
+  );
+}
+
+function Steps({ steps }) {
+  if (!steps?.length) return null;
+  return (
+    <div className="steps">
+      {steps.map((s, i) => (
+        <div className="step" key={i}>
+          <div className="stepnum">{i + 1}</div>
+          <p>{s}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ---------- main ----------
+export default function App() {
+  const [tab, setTab] = useState("plan");
+
+  // plan state
+  const [location, setLocation] = useState("");
+  const [when, setWhen] = useState("");
+  const [species, setSpecies] = useState("Snakehead");
+  const [notes, setNotes] = useState("");
+  const [plan, setPlan] = useState(null);
+  const [planBusy, setPlanBusy] = useState(false);
+  const [planErr, setPlanErr] = useState("");
+
+  // scan state
+  const [preview, setPreview] = useState(null);
+  const [b64, setB64] = useState(null);
+  const [scanContext, setScanContext] = useState("");
+  const [scan, setScan] = useState(null);
+  const [scanBusy, setScanBusy] = useState(false);
+  const [scanErr, setScanErr] = useState("");
+  const fileRef = useRef(null);
+
+  useEffect(() => {
+    const d = new Date();
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    setWhen(d.toISOString().slice(0, 16));
+  }, []);
+
+  const runPlan = async () => {
+    if (!location.trim()) { setPlanErr("Enter a location first — a town, river, or lake name works."); return; }
+    setPlanBusy(true); setPlanErr(""); setPlan(null);
+    try {
+      const result = await fetchGamePlan({
+        location: location.trim(),
+        when: new Date(when).toLocaleString(),
+        species, notes: notes.trim(),
+      });
+      setPlan(result);
+    } catch (e) {
+      setPlanErr("Couldn't build the game plan. Check the location spelling and try again.");
+    } finally { setPlanBusy(false); }
+  };
+
+  const onPhoto = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setScan(null); setScanErr("");
+    setPreview(URL.createObjectURL(file));
+    try { setB64(await resizeImage(file)); }
+    catch { setScanErr("Couldn't read that photo. Try another one."); }
+  };
+
+  const runScan = async () => {
+    if (!b64) { setScanErr("Take or choose a photo first."); return; }
+    setScanBusy(true); setScanErr(""); setScan(null);
+    try {
+      const result = await fetchScan({ base64: b64, species, context: scanContext.trim() });
+      setScan(result);
+    } catch {
+      setScanErr("Scan failed. Try again, or retake the photo in better light.");
+    } finally { setScanBusy(false); }
+  };
+
+  const c = plan?.conditions;
+
+  return (
+    <>
+      <style>{css}</style>
+      <div className="app">
+        <div className="masthead">
+          <div className="eyebrow">Bank-side game plans</div>
+          <h1>What to <em>Throw</em></h1>
+          <div className="sub">Conditions in. Lure, retrieve, and targets out.</div>
+        </div>
+
+        {tab === "plan" && (
+          <div className="pad">
+            <div className="field">
+              <label>Location</label>
+              <input type="text" placeholder="e.g. Blackwater River, MD or Loch Raven Reservoir"
+                value={location} onChange={(e) => setLocation(e.target.value)} />
+            </div>
+            <div className="field">
+              <label>Trip date & time</label>
+              <input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} />
+            </div>
+            <div className="field">
+              <label>Target</label>
+              <div className="chips">
+                {SPECIES.map((s) => (
+                  <button key={s} className={`chip${species === s ? " on" : ""}`} onClick={() => setSpecies(s)}>{s}</button>
+                ))}
+              </div>
+            </div>
+            <div className="field">
+              <label>Notes (optional)</label>
+              <input type="text" placeholder="e.g. kayak, muddy water, pads everywhere"
+                value={notes} onChange={(e) => setNotes(e.target.value)} />
+            </div>
+            <button className="go" onClick={runPlan} disabled={planBusy}>
+              {planBusy ? "Reading the water..." : "Build my game plan"}
+            </button>
+
+            {planErr && <div className="err">{planErr}</div>}
+            {planBusy && <Loading msg="Pulling live weather and matching the hatch..." />}
+
+            {plan && (
+              <div style={{ marginTop: 18 }}>
+                {c && (
+                  <div className="strip">
+                    <div className="cell"><b>{c.temp}</b><span>Air</span></div>
+                    <div className="cell"><b>{c.wind}</b><span>Wind</span></div>
+                    <div className="cell"><b>{c.sky}</b><span>Sky</span></div>
+                    <div className="cell"><b>{c.pressure}</b><span>Pressure</span></div>
+                  </div>
+                )}
+                {plan.summary && <div className="read"><h3>The read</h3><p>{plan.summary}</p></div>}
+                <TackleCard tag="Tie this on" data={plan.primary} />
+                <TackleCard tag="Backup" data={plan.backup} backup />
+                <div className="h2">How to fish it</div>
+                <Steps steps={plan.steps} />
+                {plan.spots?.length > 0 && (
+                  <>
+                    <div className="h2">Where to put it</div>
+                    {plan.spots.map((s, i) => <div className="spot" key={i}>{s}</div>)}
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {tab === "scan" && (
+          <div className="pad">
+            <input ref={fileRef} type="file" accept="image/*" capture="environment"
+              style={{ display: "none" }} onChange={onPhoto} />
+            <div className="frame" onClick={() => fileRef.current?.click()}>
+              {preview ? <img src={preview} alt="Your photo" /> : (
+                <>
+                  <div className="cam">📷</div>
+                  <div>Tap to take or choose a photo</div>
+                  <div style={{ fontSize: 12 }}>Water, cover, a catch, or your tackle</div>
+                </>
+              )}
+            </div>
+            <div className="field">
+              <label>Target</label>
+              <div className="chips">
+                {SPECIES.map((s) => (
+                  <button key={s} className={`chip${species === s ? " on" : ""}`} onClick={() => setSpecies(s)}>{s}</button>
+                ))}
+              </div>
+            </div>
+            <div className="field">
+              <label>Anything I should know? (optional)</label>
+              <input type="text" placeholder="e.g. water is 2ft deep, fish blowing up but not eating"
+                value={scanContext} onChange={(e) => setScanContext(e.target.value)} />
+            </div>
+            <button className="go" onClick={runScan} disabled={scanBusy || !preview}>
+              {scanBusy ? "Scanning..." : "Scan & tell me what to do"}
+            </button>
+            {preview && !scanBusy && (
+              <button className="go alt" style={{ marginTop: 10 }} onClick={() => fileRef.current?.click()}>
+                Retake photo
+              </button>
+            )}
+
+            {scanErr && <div className="err">{scanErr}</div>}
+            {scanBusy && <Loading msg="Reading the scene..." />}
+
+            {scan && (
+              <div style={{ marginTop: 18 }}>
+                <div className="read"><h3>What I'm seeing</h3><p>{scan.read}</p></div>
+                <TackleCard tag="Tie this on" data={scan.lure ? { ...scan.lure, lure: scan.lure.name, confidence: "" } : null} />
+                <div className="h2">Step by step</div>
+                <Steps steps={scan.steps} />
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="tabs">
+          <div className="tabs-inner">
+            <button className={`tab${tab === "plan" ? " on" : ""}`} onClick={() => setTab("plan")}>
+              Game Plan<div className="bar" />
+            </button>
+            <button className={`tab${tab === "scan" ? " on" : ""}`} onClick={() => setTab("scan")}>
+              Photo Scan<div className="bar" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+                  
